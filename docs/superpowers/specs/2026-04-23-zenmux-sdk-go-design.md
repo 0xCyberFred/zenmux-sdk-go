@@ -5,7 +5,7 @@
 A Go SDK for [ZenMux AI](https://zenmux.ai) that provides a **unified abstraction layer** over three AI provider APIs (OpenAI, Anthropic, Google Vertex AI) plus ZenMux's own Platform Management API. Users interact primarily through a single `zenmux.Client`, with native SDK clients exposed as escape hatches for advanced use cases.
 
 **Module path:** `github.com/0xCyberFred/zenmux-sdk-go`
-**Go version:** 1.23+ (required by `google.golang.org/genai` for `iter.Seq2`)
+**Go version:** 1.24+ (required by `google.golang.org/genai`)
 **License:** MIT
 
 ## API Scope
@@ -202,7 +202,7 @@ func (s *GeminiService) GenerateContentStream(ctx context.Context, model string,
 func (s *GeminiService) GenerateImages(ctx context.Context, model string, prompt string, config *genai.GenerateImagesConfig) (*genai.GenerateImagesResponse, error)
 
 // Video generation
-func (s *GeminiService) GenerateVideos(ctx context.Context, model string, prompt string, config *genai.GenerateVideosConfig) (*genai.GenerateVideosOperation, error)
+func (s *GeminiService) GenerateVideos(ctx context.Context, model string, prompt string, image *genai.Image, config *genai.GenerateVideosConfig) (*genai.GenerateVideosOperation, error)
 ```
 
 Streaming uses Go 1.23 `iter.Seq2`, consistent with the `genai` SDK's native pattern.
@@ -514,30 +514,37 @@ ZenMux uses `x-api-key` header for the Anthropic endpoint, which matches `anthro
 Requires special handling due to two mismatches:
 
 1. **Auth format:** ZenMux uses `Authorization: Bearer <key>`, but `genai` SDK uses `x-goog-api-key` (Gemini API backend) or Google ADC (Vertex AI backend).
-2. **Base URL isolation:** `genai.SetDefaultBaseURLs()` is a **package-level** function that affects all `genai.Client` instances in the process. As a library, we must not mutate global state.
+2. **Base URL:** `genai.ClientConfig` has `HTTPOptions.BaseURL` for per-client base URL configuration (no global mutation needed).
 
-**Recommended approach:** Use `BackendGeminiAPI` with `APIKey` and a custom `http.RoundTripper` that rewrites the base URL and auth header per-request. This provides full isolation without global side effects:
+**Recommended approach:** Use `BackendGeminiAPI` with per-client `HTTPOptions.BaseURL` set to the ZenMux endpoint, plus a custom `http.RoundTripper` to fix the auth header:
+
+```go
+client, err := genai.NewClient(ctx, &genai.ClientConfig{
+    APIKey:  apiKey,
+    Backend: genai.BackendGeminiAPI,
+    HTTPOptions: genai.HTTPOptions{
+        BaseURL: "https://zenmux.ai/api/vertex-ai",
+    },
+    HTTPClient: &http.Client{Transport: &zenMuxTransport{apiKey: apiKey}},
+})
+```
 
 ```go
 type zenMuxTransport struct {
-    apiKey  string
-    baseURL string
-    base    http.RoundTripper
+    apiKey string
+    base   http.RoundTripper
 }
 
 func (t *zenMuxTransport) RoundTrip(req *http.Request) (*http.Response, error) {
     req.Header.Set("Authorization", "Bearer "+t.apiKey)
     req.Header.Del("x-goog-api-key")
-    // Rewrite host to ZenMux endpoint
-    u, _ := url.Parse(t.baseURL)
-    req.URL.Scheme = u.Scheme
-    req.URL.Host = u.Host
-    req.Host = u.Host
-    return t.base.RoundTrip(req)
+    base := t.base
+    if base == nil {
+        base = http.DefaultTransport
+    }
+    return base.RoundTrip(req)
 }
 ```
-
-**Alternative approach (if `genai` supports per-client config):** During implementation, investigate whether `ClientConfig.HTTPOptions` or similar per-client mechanisms can set base URL without global mutation. If available, prefer that over transport rewriting.
 
 ## Authentication Summary
 
