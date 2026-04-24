@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/openai/openai-go/v3"
 )
 
 type Error struct {
@@ -47,4 +49,22 @@ func IsNotFoundError(err error) bool {
 		return e.StatusCode == http.StatusNotFound
 	}
 	return false
+}
+
+// wrapOpenAIError converts an error from the OpenAI SDK into a zenmux Error,
+// extracting the HTTP status code when available.
+func wrapOpenAIError(err error) error {
+	if err == nil {
+		return nil
+	}
+	e := &Error{
+		Provider: ProviderOpenAI,
+		Message:  err.Error(),
+		Err:      err,
+	}
+	var apierr *openai.Error
+	if errors.As(err, &apierr) {
+		e.StatusCode = apierr.StatusCode
+	}
+	return e
 }
