@@ -57,7 +57,10 @@ func (s *ChatCompletionStream) Err() error {
 
 // Close terminates the underlying stream.
 func (s *ChatCompletionStream) Close() error {
-	return s.stream.Close()
+	if err := s.stream.Close(); err != nil {
+		return wrapOpenAIError(err)
+	}
+	return nil
 }
 
 // openaiStream is a generic interface matching the ssestream.Stream pattern
