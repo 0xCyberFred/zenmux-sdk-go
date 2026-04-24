@@ -27,6 +27,8 @@ type Client struct {
 	Messages *MessageService
 	// Gemini provides access to the Google Gemini API endpoints.
 	Gemini *GeminiService
+	// Models provides unified model listing across all providers.
+	Models *ModelService
 
 	openaiClient    openai.Client
 	anthropicClient anthropic.Client
@@ -52,6 +54,7 @@ func NewClient(apiKey string, opts ...Option) *Client {
 		Embeddings:      newEmbeddingService(oc),
 		Messages:        newMessageService(ac),
 		Gemini:          newGeminiService(gc),
+		Models:          newModelService(cfg),
 		openaiClient:    oc,
 		anthropicClient: ac,
 		googleClient:    gc,
