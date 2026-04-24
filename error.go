@@ -7,6 +7,7 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/openai/openai-go/v3"
+	"google.golang.org/genai"
 )
 
 type Error struct {
@@ -84,6 +85,24 @@ func wrapAnthropicError(err error) error {
 	var apierr *anthropic.Error
 	if errors.As(err, &apierr) {
 		e.StatusCode = apierr.StatusCode
+	}
+	return e
+}
+
+// wrapGoogleError converts an error from the Google genai SDK into a zenmux
+// Error, extracting the HTTP status code when available.
+func wrapGoogleError(err error) error {
+	if err == nil {
+		return nil
+	}
+	e := &Error{
+		Provider: ProviderGoogle,
+		Message:  err.Error(),
+		Err:      err,
+	}
+	var apierr *genai.APIError
+	if errors.As(err, &apierr) {
+		e.StatusCode = apierr.Code
 	}
 	return e
 }
