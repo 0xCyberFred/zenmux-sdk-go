@@ -1,9 +1,18 @@
 package platform
 
+import "fmt"
+
 // apiResponse is the standard wrapper for most Platform API responses.
 type apiResponse[T any] struct {
 	Success bool `json:"success"`
 	Data    T    `json:"data"`
+}
+
+func (r apiResponse[T]) validate() error {
+	if !r.Success {
+		return fmt.Errorf("platform API returned success=false")
+	}
+	return nil
 }
 
 // FlowRate holds pricing information for a single flow unit.

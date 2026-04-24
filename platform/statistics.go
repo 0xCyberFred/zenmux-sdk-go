@@ -27,6 +27,9 @@ func (c *Client) GetTimeseries(ctx context.Context, params TimeseriesParams) (*T
 	if err := c.http.Get(ctx, "/statistics/timeseries", q, &resp); err != nil {
 		return nil, err
 	}
+	if err := resp.validate(); err != nil {
+		return nil, err
+	}
 	return &resp.Data, nil
 }
 
@@ -46,6 +49,9 @@ func (c *Client) GetLeaderboard(ctx context.Context, params LeaderboardParams) (
 
 	var resp apiResponse[Leaderboard]
 	if err := c.http.Get(ctx, "/statistics/leaderboard", q, &resp); err != nil {
+		return nil, err
+	}
+	if err := resp.validate(); err != nil {
 		return nil, err
 	}
 	return &resp.Data, nil
@@ -70,6 +76,9 @@ func (c *Client) GetMarketShare(ctx context.Context, params MarketShareParams) (
 
 	var resp apiResponse[MarketShare]
 	if err := c.http.Get(ctx, "/statistics/market_share", q, &resp); err != nil {
+		return nil, err
+	}
+	if err := resp.validate(); err != nil {
 		return nil, err
 	}
 	return &resp.Data, nil

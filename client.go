@@ -46,13 +46,20 @@ func NewClient(apiKey string, opts ...Option) *Client {
 		opt(cfg)
 	}
 
-	oc := openaiprovider.NewClient(cfg.apiKey, cfg.baseURL(ProviderOpenAI), cfg.httpClient, cfg.maxRetries)
-	ac := anthropicprovider.NewClient(cfg.apiKey, cfg.baseURL(ProviderAnthropic), cfg.httpClient, cfg.maxRetries)
-	gc, _ := googleprovider.NewClient(context.Background(), cfg.apiKey, cfg.baseURL(ProviderGoogle), cfg.httpClient)
+	hc := cfg.effectiveHTTPClient()
+
+	oc := openaiprovider.NewClient(cfg.apiKey, cfg.baseURL(ProviderOpenAI), hc, cfg.maxRetries)
+	ac := anthropicprovider.NewClient(cfg.apiKey, cfg.baseURL(ProviderAnthropic), hc, cfg.maxRetries)
+	gc, _ := googleprovider.NewClient(context.Background(), cfg.apiKey, cfg.baseURL(ProviderGoogle), hc)
+
+	var gemini *GeminiService
+	if gc != nil {
+		gemini = newGeminiService(gc)
+	}
 
 	var pc *platform.Client
 	if cfg.managementKey != "" {
-		pc = platform.NewClient(cfg.platformBaseURL(), cfg.managementKey, cfg.httpClient)
+		pc = platform.NewClient(cfg.platformBaseURL(), cfg.managementKey, hc)
 	}
 
 	return &Client{
@@ -61,7 +68,7 @@ func NewClient(apiKey string, opts ...Option) *Client {
 		Responses:       newResponseService(oc),
 		Embeddings:      newEmbeddingService(oc),
 		Messages:        newMessageService(ac),
-		Gemini:          newGeminiService(gc),
+		Gemini:          gemini,
 		Models:          newModelService(cfg),
 		Platform:        pc,
 		openaiClient:    oc,

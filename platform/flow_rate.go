@@ -8,5 +8,8 @@ func (c *Client) GetFlowRate(ctx context.Context) (*FlowRate, error) {
 	if err := c.http.Get(ctx, "/flow_rate", nil, &resp); err != nil {
 		return nil, err
 	}
+	if err := resp.validate(); err != nil {
+		return nil, err
+	}
 	return &resp.Data, nil
 }

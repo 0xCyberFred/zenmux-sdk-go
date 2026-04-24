@@ -35,7 +35,17 @@ func (c *config) baseURL(p Provider) string {
 }
 
 func (c *config) platformBaseURL() string {
+	if u, ok := c.baseURLs["platform"]; ok {
+		return u
+	}
 	return defaultPlatformBaseURL
+}
+
+func (c *config) effectiveHTTPClient() *http.Client {
+	if c.httpClient != nil {
+		return c.httpClient
+	}
+	return &http.Client{Timeout: c.timeout}
 }
 
 type Option func(*config)

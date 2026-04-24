@@ -6,6 +6,7 @@ const (
 	ProviderOpenAI    Provider = "openai"
 	ProviderAnthropic Provider = "anthropic"
 	ProviderGoogle    Provider = "google"
+	ProviderPlatform  Provider = "platform"
 )
 
 const (

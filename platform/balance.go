@@ -8,5 +8,8 @@ func (c *Client) GetPAYGBalance(ctx context.Context) (*PAYGBalance, error) {
 	if err := c.http.Get(ctx, "/balance", nil, &resp); err != nil {
 		return nil, err
 	}
+	if err := resp.validate(); err != nil {
+		return nil, err
+	}
 	return &resp.Data, nil
 }

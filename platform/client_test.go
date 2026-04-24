@@ -106,7 +106,7 @@ func TestGetPAYGBalance(t *testing.T) {
 func TestGetSubscription(t *testing.T) {
 	resetTime := "2026-04-25T00:00:00Z"
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/subscription" {
+		if r.URL.Path != "/subscription/detail" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 
