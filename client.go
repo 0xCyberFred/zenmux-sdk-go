@@ -13,6 +13,10 @@ type Client struct {
 
 	// Chat provides access to chat completion endpoints.
 	Chat *ChatService
+	// Responses provides access to the Responses API endpoints.
+	Responses *ResponseService
+	// Embeddings provides access to the embeddings API endpoints.
+	Embeddings *EmbeddingService
 
 	openaiClient openai.Client
 }
@@ -30,6 +34,8 @@ func NewClient(apiKey string, opts ...Option) *Client {
 	return &Client{
 		cfg:          cfg,
 		Chat:         newChatService(oc),
+		Responses:    newResponseService(oc),
+		Embeddings:   newEmbeddingService(oc),
 		openaiClient: oc,
 	}
 }
