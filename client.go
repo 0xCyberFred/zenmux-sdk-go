@@ -7,6 +7,7 @@ import (
 	"github.com/openai/openai-go/v3"
 	"google.golang.org/genai"
 
+	"github.com/0xCyberFred/zenmux-sdk-go/platform"
 	anthropicprovider "github.com/0xCyberFred/zenmux-sdk-go/provider/anthropic"
 	googleprovider "github.com/0xCyberFred/zenmux-sdk-go/provider/google"
 	openaiprovider "github.com/0xCyberFred/zenmux-sdk-go/provider/openai"
@@ -29,6 +30,8 @@ type Client struct {
 	Gemini *GeminiService
 	// Models provides unified model listing across all providers.
 	Models *ModelService
+	// Platform provides access to the ZenMux Platform management API.
+	Platform *platform.Client
 
 	openaiClient    openai.Client
 	anthropicClient anthropic.Client
@@ -47,6 +50,11 @@ func NewClient(apiKey string, opts ...Option) *Client {
 	ac := anthropicprovider.NewClient(cfg.apiKey, cfg.baseURL(ProviderAnthropic), cfg.httpClient, cfg.maxRetries)
 	gc, _ := googleprovider.NewClient(context.Background(), cfg.apiKey, cfg.baseURL(ProviderGoogle), cfg.httpClient)
 
+	var pc *platform.Client
+	if cfg.managementKey != "" {
+		pc = platform.NewClient(cfg.platformBaseURL(), cfg.managementKey, cfg.httpClient)
+	}
+
 	return &Client{
 		cfg:             cfg,
 		Chat:            newChatService(oc),
@@ -55,6 +63,7 @@ func NewClient(apiKey string, opts ...Option) *Client {
 		Messages:        newMessageService(ac),
 		Gemini:          newGeminiService(gc),
 		Models:          newModelService(cfg),
+		Platform:        pc,
 		openaiClient:    oc,
 		anthropicClient: ac,
 		googleClient:    gc,
