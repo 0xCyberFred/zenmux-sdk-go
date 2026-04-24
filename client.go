@@ -1,8 +1,10 @@
 package zenmux
 
 import (
+	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/openai/openai-go/v3"
 
+	anthropicprovider "github.com/0xCyberFred/zenmux-sdk-go/provider/anthropic"
 	openaiprovider "github.com/0xCyberFred/zenmux-sdk-go/provider/openai"
 )
 
@@ -17,8 +19,11 @@ type Client struct {
 	Responses *ResponseService
 	// Embeddings provides access to the embeddings API endpoints.
 	Embeddings *EmbeddingService
+	// Messages provides access to the Anthropic Messages API endpoints.
+	Messages *MessageService
 
-	openaiClient openai.Client
+	openaiClient    openai.Client
+	anthropicClient anthropic.Client
 }
 
 // NewClient creates a new ZenMux client configured with the given API key and
@@ -30,13 +35,16 @@ func NewClient(apiKey string, opts ...Option) *Client {
 	}
 
 	oc := openaiprovider.NewClient(cfg.apiKey, cfg.baseURL(ProviderOpenAI), cfg.httpClient, cfg.maxRetries)
+	ac := anthropicprovider.NewClient(cfg.apiKey, cfg.baseURL(ProviderAnthropic), cfg.httpClient, cfg.maxRetries)
 
 	return &Client{
-		cfg:          cfg,
-		Chat:         newChatService(oc),
-		Responses:    newResponseService(oc),
-		Embeddings:   newEmbeddingService(oc),
-		openaiClient: oc,
+		cfg:             cfg,
+		Chat:            newChatService(oc),
+		Responses:       newResponseService(oc),
+		Embeddings:      newEmbeddingService(oc),
+		Messages:        newMessageService(ac),
+		openaiClient:    oc,
+		anthropicClient: ac,
 	}
 }
 
@@ -44,4 +52,10 @@ func NewClient(apiKey string, opts ...Option) *Client {
 // provider-specific functionality.
 func (c *Client) OpenAI() openai.Client {
 	return c.openaiClient
+}
+
+// Anthropic returns the underlying anthropic-sdk-go client for direct access
+// to provider-specific functionality.
+func (c *Client) Anthropic() anthropic.Client {
+	return c.anthropicClient
 }

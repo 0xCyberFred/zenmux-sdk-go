@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/openai/openai-go/v3"
 )
 
@@ -63,6 +64,24 @@ func wrapOpenAIError(err error) error {
 		Err:      err,
 	}
 	var apierr *openai.Error
+	if errors.As(err, &apierr) {
+		e.StatusCode = apierr.StatusCode
+	}
+	return e
+}
+
+// wrapAnthropicError converts an error from the Anthropic SDK into a zenmux
+// Error, extracting the HTTP status code when available.
+func wrapAnthropicError(err error) error {
+	if err == nil {
+		return nil
+	}
+	e := &Error{
+		Provider: ProviderAnthropic,
+		Message:  err.Error(),
+		Err:      err,
+	}
+	var apierr *anthropic.Error
 	if errors.As(err, &apierr) {
 		e.StatusCode = apierr.StatusCode
 	}
