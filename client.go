@@ -54,7 +54,7 @@ func NewClient(apiKey string, opts ...Option) *Client {
 
 	var gemini *GeminiService
 	if gc != nil {
-		gemini = newGeminiService(gc)
+		gemini = newGeminiService(gc, cfg)
 	}
 
 	var pc *platform.Client

@@ -1,10 +1,14 @@
-// Generate a video using Google Veo via ZenMux's Vertex AI protocol.
+// Generate a video via ZenMux's Vertex AI protocol.
 //
 // Unlike GenerateImages (synchronous), GenerateVideos is a long-running
 // operation. The flow is:
-//   1. Call GenerateVideos → returns an Operation (not the video)
-//   2. Poll GetVideosOperation until operation.Done == true
-//   3. Read the video bytes from operation.Response
+//  1. Call GenerateVideos → returns an Operation (not the video)
+//  2. Poll Gemini.GetVideosOperation until operation.Done == true
+//  3. Read the video bytes from operation.Response
+//
+// Note: this uses client.Gemini.GetVideosOperation (a ZenMux SDK method),
+// not gc.Operations.GetVideosOperation from the genai library, because
+// ZenMux speaks Vertex protocol on a non-default API version.
 //
 // Usage:
 //
@@ -28,12 +32,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	// Step 1: Submit the video generation request.
 	fmt.Println("Submitting video generation request...")
 	op, err := client.Gemini.GenerateVideos(ctx,
-		"google/veo-3.0-generate-preview",
+		"bytedance/doubao-seedance-2.0",
 		"A golden retriever running on a beach at sunset, slow motion, cinematic",
-		nil, // no reference image
+		nil,
 		&genai.GenerateVideosConfig{
 			AspectRatio: "16:9",
 		},
@@ -43,25 +46,19 @@ func main() {
 	}
 	fmt.Printf("Operation started: %s\n", op.Name)
 
-	// Step 2: Poll until the operation completes.
-	gc := client.Google()
 	for !op.Done {
 		fmt.Print(".")
 		time.Sleep(10 * time.Second)
-
-		op, err = gc.Operations.GetVideosOperation(ctx, op, nil)
+		op, err = client.Gemini.GetVideosOperation(ctx, op)
 		if err != nil {
 			log.Fatalf("poll failed: %v", err)
 		}
 	}
 	fmt.Println(" done!")
 
-	// Step 3: Check for errors.
 	if op.Error != nil {
 		log.Fatalf("video generation failed: %v", op.Error)
 	}
-
-	// Step 4: Save the generated videos.
 	if op.Response == nil || len(op.Response.GeneratedVideos) == 0 {
 		log.Fatal("no videos generated")
 	}
